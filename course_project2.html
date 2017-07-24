@@ -129,26 +129,31 @@ $(document).ready(function () {
 </div>
 <div id="reading-data" class="section level1">
 <h1>Reading Data</h1>
-<p>Firstly, the training data is read.</p>
+<p>Firstly, the training data is read and a validation dataset is created.The Validation dataset will be used to estimate the Out of Sample error using Cross Validation.</p>
 <pre class="r"><code>library(dplyr)
 library(caret)
 
 path_training &lt;- &quot;data/pml-training.csv&quot;
 
 # Read the data
-data_training &lt;- read.csv(path_training)</code></pre>
+training &lt;- read.csv(path_training)
+
+set.seed(12345)
+inValidationData &lt;- createDataPartition(training$classe, p = 0.75, list = F)
+data_training &lt;- training[inValidationData, ]
+validating &lt;- training[-inValidationData, ]</code></pre>
 <p>The dataset summary is shown below:</p>
 <pre class="r"><code>str(data_training)</code></pre>
-<pre><code>## 'data.frame':    19622 obs. of  160 variables:
-##  $ X                       : int  1 2 3 4 5 6 7 8 9 10 ...
+<pre><code>## 'data.frame':    14718 obs. of  160 variables:
+##  $ X                       : int  2 3 4 5 6 7 8 11 12 13 ...
 ##  $ user_name               : Factor w/ 6 levels &quot;adelmo&quot;,&quot;carlitos&quot;,..: 2 2 2 2 2 2 2 2 2 2 ...
-##  $ raw_timestamp_part_1    : int  1323084231 1323084231 1323084231 1323084232 1323084232 1323084232 1323084232 1323084232 1323084232 1323084232 ...
-##  $ raw_timestamp_part_2    : int  788290 808298 820366 120339 196328 304277 368296 440390 484323 484434 ...
+##  $ raw_timestamp_part_1    : int  1323084231 1323084231 1323084232 1323084232 1323084232 1323084232 1323084232 1323084232 1323084232 1323084232 ...
+##  $ raw_timestamp_part_2    : int  808298 820366 120339 196328 304277 368296 440390 500302 528316 560359 ...
 ##  $ cvtd_timestamp          : Factor w/ 20 levels &quot;02/12/2011 13:32&quot;,..: 9 9 9 9 9 9 9 9 9 9 ...
 ##  $ new_window              : Factor w/ 2 levels &quot;no&quot;,&quot;yes&quot;: 1 1 1 1 1 1 1 1 1 1 ...
-##  $ num_window              : int  11 11 11 12 12 12 12 12 12 12 ...
-##  $ roll_belt               : num  1.41 1.41 1.42 1.48 1.48 1.45 1.42 1.42 1.43 1.45 ...
-##  $ pitch_belt              : num  8.07 8.07 8.07 8.05 8.07 8.06 8.09 8.13 8.16 8.17 ...
+##  $ num_window              : int  11 11 12 12 12 12 12 12 12 12 ...
+##  $ roll_belt               : num  1.41 1.42 1.48 1.48 1.45 1.42 1.42 1.45 1.43 1.42 ...
+##  $ pitch_belt              : num  8.07 8.07 8.05 8.07 8.06 8.09 8.13 8.18 8.18 8.2 ...
 ##  $ yaw_belt                : num  -94.4 -94.4 -94.4 -94.4 -94.4 -94.4 -94.4 -94.4 -94.4 -94.4 ...
 ##  $ total_accel_belt        : int  3 3 3 3 3 3 3 3 3 3 ...
 ##  $ kurtosis_roll_belt      : Factor w/ 397 levels &quot;&quot;,&quot;-0.016850&quot;,..: 1 1 1 1 1 1 1 1 1 1 ...
@@ -176,17 +181,17 @@ data_training &lt;- read.csv(path_training)</code></pre>
 ##  $ avg_yaw_belt            : num  NA NA NA NA NA NA NA NA NA NA ...
 ##  $ stddev_yaw_belt         : num  NA NA NA NA NA NA NA NA NA NA ...
 ##  $ var_yaw_belt            : num  NA NA NA NA NA NA NA NA NA NA ...
-##  $ gyros_belt_x            : num  0 0.02 0 0.02 0.02 0.02 0.02 0.02 0.02 0.03 ...
-##  $ gyros_belt_y            : num  0 0 0 0 0.02 0 0 0 0 0 ...
-##  $ gyros_belt_z            : num  -0.02 -0.02 -0.02 -0.03 -0.02 -0.02 -0.02 -0.02 -0.02 0 ...
-##  $ accel_belt_x            : int  -21 -22 -20 -22 -21 -21 -22 -22 -20 -21 ...
-##  $ accel_belt_y            : int  4 4 5 3 2 4 3 4 2 4 ...
-##  $ accel_belt_z            : int  22 22 23 21 24 21 21 21 24 22 ...
-##  $ magnet_belt_x           : int  -3 -7 -2 -6 -6 0 -4 -2 1 -3 ...
-##  $ magnet_belt_y           : int  599 608 600 604 600 603 599 603 602 609 ...
-##  $ magnet_belt_z           : int  -313 -311 -305 -310 -302 -312 -311 -313 -312 -308 ...
+##  $ gyros_belt_x            : num  0.02 0 0.02 0.02 0.02 0.02 0.02 0.03 0.02 0.02 ...
+##  $ gyros_belt_y            : num  0 0 0 0.02 0 0 0 0 0 0 ...
+##  $ gyros_belt_z            : num  -0.02 -0.02 -0.03 -0.02 -0.02 -0.02 -0.02 -0.02 -0.02 0 ...
+##  $ accel_belt_x            : int  -22 -20 -22 -21 -21 -22 -22 -21 -22 -22 ...
+##  $ accel_belt_y            : int  4 5 3 2 4 3 4 2 2 4 ...
+##  $ accel_belt_z            : int  22 23 21 24 21 21 21 23 23 21 ...
+##  $ magnet_belt_x           : int  -7 -2 -6 -6 0 -4 -2 -5 -2 -3 ...
+##  $ magnet_belt_y           : int  608 600 604 600 603 599 603 596 602 606 ...
+##  $ magnet_belt_z           : int  -311 -305 -310 -302 -312 -311 -313 -317 -319 -309 ...
 ##  $ roll_arm                : num  -128 -128 -128 -128 -128 -128 -128 -128 -128 -128 ...
-##  $ pitch_arm               : num  22.5 22.5 22.5 22.1 22.1 22 21.9 21.8 21.7 21.6 ...
+##  $ pitch_arm               : num  22.5 22.5 22.1 22.1 22 21.9 21.8 21.5 21.5 21.4 ...
 ##  $ yaw_arm                 : num  -161 -161 -161 -161 -161 -161 -161 -161 -161 -161 ...
 ##  $ total_accel_arm         : int  34 34 34 34 34 34 34 34 34 34 ...
 ##  $ var_accel_arm           : num  NA NA NA NA NA NA NA NA NA NA ...
@@ -199,15 +204,15 @@ data_training &lt;- read.csv(path_training)</code></pre>
 ##  $ avg_yaw_arm             : num  NA NA NA NA NA NA NA NA NA NA ...
 ##  $ stddev_yaw_arm          : num  NA NA NA NA NA NA NA NA NA NA ...
 ##  $ var_yaw_arm             : num  NA NA NA NA NA NA NA NA NA NA ...
-##  $ gyros_arm_x             : num  0 0.02 0.02 0.02 0 0.02 0 0.02 0.02 0.02 ...
-##  $ gyros_arm_y             : num  0 -0.02 -0.02 -0.03 -0.03 -0.03 -0.03 -0.02 -0.03 -0.03 ...
-##  $ gyros_arm_z             : num  -0.02 -0.02 -0.02 0.02 0 0 0 0 -0.02 -0.02 ...
-##  $ accel_arm_x             : int  -288 -290 -289 -289 -289 -289 -289 -289 -288 -288 ...
-##  $ accel_arm_y             : int  109 110 110 111 111 111 111 111 109 110 ...
-##  $ accel_arm_z             : int  -123 -125 -126 -123 -123 -122 -125 -124 -122 -124 ...
-##  $ magnet_arm_x            : int  -368 -369 -368 -372 -374 -369 -373 -372 -369 -376 ...
-##  $ magnet_arm_y            : int  337 337 344 344 337 342 336 338 341 334 ...
-##  $ magnet_arm_z            : int  516 513 513 512 506 513 509 510 518 516 ...
+##  $ gyros_arm_x             : num  0.02 0.02 0.02 0 0.02 0 0.02 0.02 0.02 0.02 ...
+##  $ gyros_arm_y             : num  -0.02 -0.02 -0.03 -0.03 -0.03 -0.03 -0.02 -0.03 -0.03 -0.02 ...
+##  $ gyros_arm_z             : num  -0.02 -0.02 0.02 0 0 0 0 0 0 -0.02 ...
+##  $ accel_arm_x             : int  -290 -289 -289 -289 -289 -289 -289 -290 -288 -287 ...
+##  $ accel_arm_y             : int  110 110 111 111 111 111 111 110 111 111 ...
+##  $ accel_arm_z             : int  -125 -126 -123 -123 -122 -125 -124 -123 -123 -124 ...
+##  $ magnet_arm_x            : int  -369 -368 -372 -374 -369 -373 -372 -366 -363 -372 ...
+##  $ magnet_arm_y            : int  337 344 344 337 342 336 338 339 343 338 ...
+##  $ magnet_arm_z            : int  513 513 512 506 513 509 510 509 520 509 ...
 ##  $ kurtosis_roll_arm       : Factor w/ 330 levels &quot;&quot;,&quot;-0.02438&quot;,..: 1 1 1 1 1 1 1 1 1 1 ...
 ##  $ kurtosis_picth_arm      : Factor w/ 328 levels &quot;&quot;,&quot;-0.00484&quot;,..: 1 1 1 1 1 1 1 1 1 1 ...
 ##  $ kurtosis_yaw_arm        : Factor w/ 395 levels &quot;&quot;,&quot;-0.01548&quot;,..: 1 1 1 1 1 1 1 1 1 1 ...
@@ -223,9 +228,9 @@ data_training &lt;- read.csv(path_training)</code></pre>
 ##  $ amplitude_roll_arm      : num  NA NA NA NA NA NA NA NA NA NA ...
 ##  $ amplitude_pitch_arm     : num  NA NA NA NA NA NA NA NA NA NA ...
 ##  $ amplitude_yaw_arm       : int  NA NA NA NA NA NA NA NA NA NA ...
-##  $ roll_dumbbell           : num  13.1 13.1 12.9 13.4 13.4 ...
-##  $ pitch_dumbbell          : num  -70.5 -70.6 -70.3 -70.4 -70.4 ...
-##  $ yaw_dumbbell            : num  -84.9 -84.7 -85.1 -84.9 -84.9 ...
+##  $ roll_dumbbell           : num  13.1 12.9 13.4 13.4 13.4 ...
+##  $ pitch_dumbbell          : num  -70.6 -70.3 -70.4 -70.4 -70.8 ...
+##  $ yaw_dumbbell            : num  -84.7 -85.1 -84.9 -84.9 -84.5 ...
 ##  $ kurtosis_roll_dumbbell  : Factor w/ 398 levels &quot;&quot;,&quot;-0.0035&quot;,&quot;-0.0073&quot;,..: 1 1 1 1 1 1 1 1 1 1 ...
 ##  $ kurtosis_picth_dumbbell : Factor w/ 401 levels &quot;&quot;,&quot;-0.0163&quot;,&quot;-0.0233&quot;,..: 1 1 1 1 1 1 1 1 1 1 ...
 ##  $ kurtosis_yaw_dumbbell   : Factor w/ 2 levels &quot;&quot;,&quot;#DIV/0!&quot;: 1 1 1 1 1 1 1 1 1 1 ...
@@ -247,57 +252,60 @@ data_training &lt;- read.csv(path_training)</code></pre>
 <p>The columns that are not relevant (1 to 8) are eliminated of the data set, just like variables that have NA´s on their rows. Some variables were read like factors, but for this analysis, all variables will be coerced to the numeric class.</p>
 <pre class="r"><code># Eliminating variables that looks irrelevant
 data_training &lt;- data_training[, 8:ncol(data_training)]
+validating &lt;- validating[, 8:ncol(validating)]
 
 # change all variables to numeric
 data_training[ , -which(colnames(data_training) == &quot;classe&quot;)] &lt;- lapply(data_training[ , -which(colnames(data_training) == &quot;classe&quot;)], function(x) as.numeric(as.character(x))) %&gt;% as.data.frame()
+validating[ , -which(colnames(validating) == &quot;classe&quot;)] &lt;- lapply(validating[ , -which(colnames(validating) == &quot;classe&quot;)], function(x) as.numeric(as.character(x))) %&gt;% as.data.frame()
 
 has_na &lt;- apply(data_training, 2, function(x) sum(is.na(x)) &gt; 0)
 
-data_training &lt;- data_training[, !has_na]</code></pre>
+data_training &lt;- data_training[, !has_na]
+validating &lt;- validating[, !has_na]</code></pre>
 <p>It´s important to repeat the same process for the testing dataset.</p>
 </div>
 <div id="preprocessing-analysis" class="section level1">
 <h1>Preprocessing Analysis</h1>
 <p>First, an analysis of the variance of the variables was made.</p>
-<pre class="r"><code># Histogram of standard deviation
+<pre class="r"><code># Standard Deviation Analysis
 sd_training &lt;- apply(data_training[, -which(colnames(data_training) == &quot;classe&quot;)], 2, sd)
 print(sd_training)</code></pre>
 <pre><code>##            roll_belt           pitch_belt             yaw_belt 
-##          62.75025513          22.35124227          95.19392611 
+##          62.75972498          22.38980479          95.40109033 
 ##     total_accel_belt         gyros_belt_x         gyros_belt_y 
-##           7.74230906           0.20732903           0.07823552 
+##           7.75376592           0.20880938           0.07754467 
 ##         gyros_belt_z         accel_belt_x         accel_belt_y 
-##           0.24132118          29.64478521          28.57783480 
+##           0.24037330          29.70979968          28.57544972 
 ##         accel_belt_z        magnet_belt_x        magnet_belt_y 
-##         100.44674013          64.17928623          35.68085521 
+##         100.46617547          64.17770299          35.61757182 
 ##        magnet_belt_z             roll_arm            pitch_arm 
-##          65.20954853          72.74405425          30.68195213 
+##          64.20313029          72.72016332          30.78535233 
 ##              yaw_arm      total_accel_arm          gyros_arm_x 
-##          71.36338419          10.52227225           1.99359686 
+##          71.27486931          10.53816663           1.99929194 
 ##          gyros_arm_y          gyros_arm_z          accel_arm_x 
-##           0.85139059           0.55316880         182.04490527 
+##           0.85406651           0.55225947         182.68342140 
 ##          accel_arm_y          accel_arm_z         magnet_arm_x 
-##         109.86602257         134.65285245         443.64332478 
+##         109.45959727         134.61615584         443.77612526 
 ##         magnet_arm_y         magnet_arm_z        roll_dumbbell 
-##         201.91048503         326.61929037          69.93172026 
+##         201.74610487         326.46796226          69.77270518 
 ##       pitch_dumbbell         yaw_dumbbell total_accel_dumbbell 
-##          36.99351348          82.51719167          10.23343501 
+##          36.98836225          82.68532063          10.21567471 
 ##     gyros_dumbbell_x     gyros_dumbbell_y     gyros_dumbbell_z 
-##           1.50855342           0.60999030           2.28659902 
+##           1.72844406           0.64787150           2.63382844 
 ##     accel_dumbbell_x     accel_dumbbell_y     accel_dumbbell_z 
-##          67.31676203          80.75064076         109.46847097 
+##          67.42969158          80.80708588         109.30597483 
 ##    magnet_dumbbell_x    magnet_dumbbell_y    magnet_dumbbell_z 
-##         339.72422390         326.86598393         139.96376124 
+##         341.49803517         328.90627185         139.80620265 
 ##         roll_forearm        pitch_forearm          yaw_forearm 
-##         108.03586065          28.14553399         103.21915622 
+##         107.91515118          28.15827450         103.01562134 
 ##  total_accel_forearm      gyros_forearm_x      gyros_forearm_y 
-##          10.05595622           0.64861770           3.10072464 
+##          10.02061458           0.65661947           3.35089783 
 ##      gyros_forearm_z      accel_forearm_x      accel_forearm_y 
-##           1.75448259         180.59368725         200.13008213 
+##           1.99590640         180.45677004         200.65784670 
 ##      accel_forearm_z     magnet_forearm_x     magnet_forearm_y 
-##         138.39694683         346.95848165         509.37374207 
+##         138.27960066         346.57592501         509.73422166 
 ##     magnet_forearm_z 
-##         369.26874707</code></pre>
+##         370.76687559</code></pre>
 <p>It´s clear that most of the variables varies a lot, so the “center and scale” approach was chosen.</p>
 <p>Second, the analysis of the correlation between variables points that some of them are highly correlated with each other, so the “Principal Components Analysis” method should be used for reducing the number of variables for creating the model.</p>
 <pre class="r"><code>M &lt;- abs(cor(data_training[, -which(colnames(data_training) == &quot;classe&quot;)]))
@@ -324,6 +332,8 @@ which(M &gt; 0.8, arr.ind = T)</code></pre>
 ## accel_belt_y       9  10
 ## pitch_belt         2  11
 ## accel_belt_x       8  11
+## magnet_belt_z     13  12
+## magnet_belt_y     12  13
 ## gyros_arm_y       19  18
 ## gyros_arm_x       18  19
 ## magnet_arm_x      24  21
@@ -349,29 +359,31 @@ which(M &gt; 0.8, arr.ind = T)</code></pre>
 <pre class="r"><code># Create model fit
 set.seed(54321)
 modFit &lt;- train(classe ~ ., data = data_training, preProcess = c(&quot;center&quot;, &quot;scale&quot;, &quot;pca&quot;), method = &quot;gbm&quot;, verbose = F)</code></pre>
+<pre><code>## Warning: package 'gbm' was built under R version 3.3.3</code></pre>
+<pre><code>## Warning: package 'survival' was built under R version 3.3.3</code></pre>
 <pre class="r"><code>print(modFit)</code></pre>
 <pre><code>## Stochastic Gradient Boosting 
 ## 
-## 19622 samples
+## 14718 samples
 ##    52 predictor
 ##     5 classes: 'A', 'B', 'C', 'D', 'E' 
 ## 
 ## Pre-processing: centered (52), scaled (52), principal component
 ##  signal extraction (52) 
 ## Resampling: Bootstrapped (25 reps) 
-## Summary of sample sizes: 19622, 19622, 19622, 19622, 19622, 19622, ... 
+## Summary of sample sizes: 14718, 14718, 14718, 14718, 14718, 14718, ... 
 ## Resampling results across tuning parameters:
 ## 
 ##   interaction.depth  n.trees  Accuracy   Kappa    
-##   1                   50      0.5593430  0.4332181
-##   1                  100      0.6163139  0.5103814
-##   1                  150      0.6452050  0.5484235
-##   2                   50      0.6551976  0.5608270
-##   2                  100      0.7222120  0.6474398
-##   2                  150      0.7588927  0.6943328
-##   3                   50      0.7092029  0.6306681
-##   3                  100      0.7759331  0.7159609
-##   3                  150      0.8125873  0.7625798
+##   1                   50      0.5532444  0.4257836
+##   1                  100      0.6146309  0.5083962
+##   1                  150      0.6441733  0.5471313
+##   2                   50      0.6549446  0.5605337
+##   2                  100      0.7174385  0.6412579
+##   2                  150      0.7534411  0.6873066
+##   3                   50      0.7073589  0.6282572
+##   3                  100      0.7718602  0.7107975
+##   3                  150      0.8077137  0.7563962
 ## 
 ## Tuning parameter 'shrinkage' was held constant at a value of 0.1
 ## 
@@ -379,28 +391,8 @@ modFit &lt;- train(classe ~ ., data = data_training, preProcess = c(&quot;center
 ## Accuracy was used to select the optimal model using  the largest value.
 ## The final values used for the model were n.trees = 150,
 ##  interaction.depth = 3, shrinkage = 0.1 and n.minobsinnode = 10.</code></pre>
-<p>The accuracy obtained was close to 82% on training set.</p>
-</div>
-<div id="applying-the-model-to-the-test-set" class="section level1">
-<h1>Applying the Model to the Test Set</h1>
-<div id="preparing-the-test-set" class="section level2">
-<h2>Preparing the Test Set</h2>
-<p>The same process that the training set was built over is the same process that the testing set must pass through.</p>
-<pre class="r"><code>path_testing &lt;- &quot;data/pml-testing.csv&quot;
-data_testing &lt;- read.csv(path_testing)
-
-data_testing &lt;- data_testing[, 8:ncol(data_testing)]
-
-data_testing[ , -which(colnames(data_testing) == &quot;classe&quot;)] &lt;- lapply(data_testing[ , -which(colnames(data_testing) == &quot;classe&quot;)], function(x) as.numeric(as.character(x))) %&gt;% as.data.frame()
-
-data_testing &lt;- data_testing[, !has_na]</code></pre>
-</div>
-</div>
-<div id="predicting-with-the-model" class="section level1">
-<h1>Predicting with the Model</h1>
-<p>The prediction was created with the built model.</p>
-<pre class="r"><code># Predicting into testing data
-predictions &lt;- predict(modFit, newdata = data_testing)</code></pre>
+<p>The In Sample accuracy obtained was close to 81% on training set.Let´s see the Out of Sample error, using the Validating dataset:</p>
+<pre class="r"><code>val_prediction &lt;- predict(modFit, newdata = validating)</code></pre>
 <pre><code>## Loading required package: gbm</code></pre>
 <pre><code>## Warning: package 'gbm' was built under R version 3.3.3</code></pre>
 <pre><code>## Loading required package: survival</code></pre>
@@ -425,7 +417,61 @@ predictions &lt;- predict(modFit, newdata = data_testing)</code></pre>
 ## 
 ##     arrange, count, desc, failwith, id, mutate, rename, summarise,
 ##     summarize</code></pre>
-<pre class="r"><code>print(predictions)</code></pre>
+<pre class="r"><code>confusionMatrix(val_prediction, validating$classe)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 1245  105   59   32   25
+##          B   33  723   63   30   71
+##          C   50   90  704   97   59
+##          D   54   11   13  628   40
+##          E   13   20   16   17  706
+## 
+## Overall Statistics
+##                                           
+##                Accuracy : 0.8169          
+##                  95% CI : (0.8058, 0.8276)
+##     No Information Rate : 0.2845          
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+##                                           
+##                   Kappa : 0.768           
+##  Mcnemar's Test P-Value : &lt; 2.2e-16       
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity            0.8925   0.7619   0.8234   0.7811   0.7836
+## Specificity            0.9370   0.9502   0.9269   0.9712   0.9835
+## Pos Pred Value         0.8492   0.7859   0.7040   0.8418   0.9145
+## Neg Pred Value         0.9564   0.9433   0.9613   0.9577   0.9528
+## Prevalence             0.2845   0.1935   0.1743   0.1639   0.1837
+## Detection Rate         0.2539   0.1474   0.1436   0.1281   0.1440
+## Detection Prevalence   0.2989   0.1876   0.2039   0.1521   0.1574
+## Balanced Accuracy      0.9147   0.8560   0.8751   0.8762   0.8835</code></pre>
+<p>As we can see, the Out of Sample accuracy is close to 81%.</p>
+</div>
+<div id="applying-the-model-to-the-test-set" class="section level1">
+<h1>Applying the Model to the Test Set</h1>
+<div id="preparing-the-test-set" class="section level2">
+<h2>Preparing the Test Set</h2>
+<p>The same process that the training set was built over is the same process that the testing set must pass through.</p>
+<pre class="r"><code>path_testing &lt;- &quot;data/pml-testing.csv&quot;
+data_testing &lt;- read.csv(path_testing)
+
+data_testing &lt;- data_testing[, 8:ncol(data_testing)]
+
+data_testing[ , -which(colnames(data_testing) == &quot;classe&quot;)] &lt;- lapply(data_testing[ , -which(colnames(data_testing) == &quot;classe&quot;)], function(x) as.numeric(as.character(x))) %&gt;% as.data.frame()
+
+data_testing &lt;- data_testing[, !has_na]</code></pre>
+</div>
+</div>
+<div id="predicting-with-the-model" class="section level1">
+<h1>Predicting with the Model</h1>
+<p>The prediction was created with the built model.</p>
+<pre class="r"><code># Predicting into testing data
+predictions &lt;- predict(modFit, newdata = data_testing)
+print(predictions)</code></pre>
 <pre><code>##  [1] C A C A A E D B A A A C B A E E A B B B
 ## Levels: A B C D E</code></pre>
 </div>

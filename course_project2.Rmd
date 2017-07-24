@@ -15,7 +15,7 @@ The aim of this analysis is to, using data provided by a [brazilian study](http:
 
 # Reading Data
 
-Firstly, the training data is read.
+Firstly, the training data is read and a validation dataset is created.The Validation dataset will be used to estimate the Out of Sample error using Cross Validation.
 
 ```{r, message=F, warning=F}
 library(dplyr)
@@ -24,7 +24,13 @@ library(caret)
 path_training <- "data/pml-training.csv"
 
 # Read the data
-data_training <- read.csv(path_training)
+training <- read.csv(path_training)
+
+set.seed(12345)
+inValidationData <- createDataPartition(training$classe, p = 0.75, list = F)
+data_training <- training[inValidationData, ]
+validating <- training[-inValidationData, ]
+
 ```
 
 The dataset summary is shown below:
@@ -43,13 +49,16 @@ Some variables were read like factors, but for this analysis, all variables will
 ```{r, message=F, warning=F}
 # Eliminating variables that looks irrelevant
 data_training <- data_training[, 8:ncol(data_training)]
+validating <- validating[, 8:ncol(validating)]
 
 # change all variables to numeric
 data_training[ , -which(colnames(data_training) == "classe")] <- lapply(data_training[ , -which(colnames(data_training) == "classe")], function(x) as.numeric(as.character(x))) %>% as.data.frame()
+validating[ , -which(colnames(validating) == "classe")] <- lapply(validating[ , -which(colnames(validating) == "classe")], function(x) as.numeric(as.character(x))) %>% as.data.frame()
 
 has_na <- apply(data_training, 2, function(x) sum(is.na(x)) > 0)
 
 data_training <- data_training[, !has_na]
+validating <- validating[, !has_na]
 ```
 
 It´s important to repeat the same process for the testing dataset.
@@ -59,7 +68,7 @@ It´s important to repeat the same process for the testing dataset.
 First, an analysis of the variance of the variables was made.
 
 ```{r}
-# Histogram of standard deviation
+# Standard Deviation Analysis
 sd_training <- apply(data_training[, -which(colnames(data_training) == "classe")], 2, sd)
 print(sd_training)
 ```
@@ -88,7 +97,14 @@ modFit <- train(classe ~ ., data = data_training, preProcess = c("center", "scal
 print(modFit)
 ```
 
-The accuracy obtained was close to 82% on training set.
+The In Sample accuracy obtained was close to 81% on training set.Let´s see the Out of Sample error, using the Validating dataset:
+
+```{r}
+val_prediction <- predict(modFit, newdata = validating)
+confusionMatrix(val_prediction, validating$classe)
+```
+
+As we can see, the Out of Sample accuracy is close to 81%.
 
 # Applying the Model to the Test Set
 
