@@ -1,0 +1,125 @@
+---
+title: "Applying Machine Learning - Course Project"
+author: "Marcelo Angelo Pita"
+date: "19 de julho de 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Summary
+
+The aim of this analysis is to, using data provided by a [brazilian study](http://groupware.les.inf.puc-rio.br/har), create a model using machine learning techniques that predicts, based on data provided by accelerometers on a person큦 body, if the exercise is correctly or incorrectly done. For this goal, it has been performed some data cleaning, preprocessing techniques and model creation, providing a quite accurate algorithm.
+
+# Reading Data
+
+Firstly, the training data is read.
+
+```{r, message=F, warning=F}
+library(dplyr)
+library(caret)
+
+path_training <- "data/pml-training.csv"
+
+# Read the data
+data_training <- read.csv(path_training)
+```
+
+The dataset summary is shown below:
+
+```{r}
+str(data_training)
+```
+
+It can be seen a lot of columns with NA큦 and others that don큧 seem to be of value for creating the model. They are going to be removed on the cleaning data stage.
+
+# Cleaning Data
+
+The columns that are not relevant (1 to 8) are eliminated of the data set, just like variables that have NA큦 on their rows.
+Some variables were read like factors, but for this analysis, all variables will be coerced to the numeric class.
+
+```{r, message=F, warning=F}
+# Eliminating variables that looks irrelevant
+data_training <- data_training[, 8:ncol(data_training)]
+
+# change all variables to numeric
+data_training[ , -which(colnames(data_training) == "classe")] <- lapply(data_training[ , -which(colnames(data_training) == "classe")], function(x) as.numeric(as.character(x))) %>% as.data.frame()
+
+has_na <- apply(data_training, 2, function(x) sum(is.na(x)) > 0)
+
+data_training <- data_training[, !has_na]
+```
+
+It큦 important to repeat the same process for the testing dataset.
+
+# Preprocessing Analysis
+
+First, an analysis of the variance of the variables was made.
+
+```{r}
+# Histogram of standard deviation
+sd_training <- apply(data_training[, -which(colnames(data_training) == "classe")], 2, sd)
+print(sd_training)
+```
+
+It큦 clear that most of the variables varies a lot, so the "center and scale" approach was chosen.
+
+Second, the analysis of the correlation between variables points that some of them are highly correlated with each other, so the "Principal Components Analysis" method should be used for reducing the number of variables for creating the model.
+
+```{r}
+M <- abs(cor(data_training[, -which(colnames(data_training) == "classe")]))
+diag(M) <- 0
+which(M > 0.8, arr.ind = T)
+```
+
+# Creating the Model
+
+The model was built using the preprecess methods listed above. The algorithm chosen was the Gradient Boosting Machine, due to it큦 accuracy and use of trees, appropriate for classification problems. One downside of gbm is that it큦 a bit slow, taking a few minutes to create the model for this problem.
+
+```{r, cache=T, message=F}
+# Create model fit
+set.seed(54321)
+modFit <- train(classe ~ ., data = data_training, preProcess = c("center", "scale", "pca"), method = "gbm", verbose = F)
+```
+
+```{r}
+print(modFit)
+```
+
+The accuracy obtained was close to 82% on training set.
+
+# Applying the Model to the Test Set
+
+## Preparing the Test Set
+
+The same process that the training set was built over is the same process that the testing set must pass through.
+
+```{r}
+path_testing <- "data/pml-testing.csv"
+data_testing <- read.csv(path_testing)
+
+data_testing <- data_testing[, 8:ncol(data_testing)]
+
+data_testing[ , -which(colnames(data_testing) == "classe")] <- lapply(data_testing[ , -which(colnames(data_testing) == "classe")], function(x) as.numeric(as.character(x))) %>% as.data.frame()
+
+data_testing <- data_testing[, !has_na]
+```
+
+# Predicting with the Model
+
+The prediction was created with the built model.
+
+```{r}
+# Predicting into testing data
+predictions <- predict(modFit, newdata = data_testing)
+print(predictions)
+```
+
+# Conclusion
+
+A Data Analysis was made to respond the question "How is this exercise done?". The data was collected with sensors over the body of the person and at the barbell. The data was cleaned and some preprocess methods were made. The GBM method was chosen as an accurate Machine Learning algorithm and the model predicts over the testing data.
+
+
+
